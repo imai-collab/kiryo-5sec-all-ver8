@@ -568,6 +568,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [pendingPromotionMove, setPendingPromotionMove] = useState<Move | null>(null);
   const [sfenHistory, setSfenHistory] = useState<string[]>([]);
+  const [resetCounts, setResetCounts] = useState<Record<number, number>>({});
   const [resetTrigger, setResetTrigger] = useState(0);
   const [solvedAiMovesMap, setSolvedAiMovesMap] = useState<Record<string, Move[]>>({});
   const [preferredAiMovesMap, setPreferredAiMovesMap] = useState<Record<string, Move>>({});
@@ -1907,7 +1908,15 @@ SFEN形式の例: 7nl/1R3sk2/5pppp/9/9/9/9/9/9 b GS 1
 
             <div className="flex flex-row w-full max-w-full px-2 sm:px-0 sm:max-w-[480px] gap-2 mt-1 sm:mt-0">
               <button
-                onClick={resetGame}
+                onClick={() => {
+                  if (moveHistory.length > 0 && message !== 'CORRECT') {
+                    setResetCounts(prev => ({
+                      ...prev,
+                      [currentProblem.id]: (prev[currentProblem.id] || 0) + 1
+                    }));
+                  }
+                  resetGame();
+                }}
                 className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-amber-800 text-white py-1.5 sm:py-3 rounded-lg sm:rounded-xl font-bold text-xs sm:text-base hover:bg-amber-900 transition-colors shadow-sm active:scale-95"
               >
                 <RotateCcw size={14} className="sm:w-[18px] sm:h-[18px]" />
@@ -2087,6 +2096,7 @@ SFEN形式の例: 7nl/1R3sk2/5pppp/9/9/9/9/9/9 b GS 1
                    {problems.map((p, i) => {
                       const isSolved = solvedProblems.includes(p.id);
                       const isCurrent = currentProblemIndex === i;
+                      const resetCount = resetCounts[p.id] || 0;
                       return (
                         <button 
                           key={p.id} 
@@ -2098,15 +2108,20 @@ SFEN形式の例: 7nl/1R3sk2/5pppp/9/9/9/9/9/9 b GS 1
                           `}
                         >
                            <span className="text-sm font-bold">{i+1}</span>
-                           {isSolved ? <Check size={16} strokeWidth={3} className="text-green-600 mt-1" /> : <div className="w-4 h-4 mt-1 opacity-20 border-2 border-amber-900 rounded-sm" />}
+                           <div className={`text-xs mt-1 font-semibold ${isSolved ? 'text-green-700/80' : 'text-amber-700/80'}`}>
+                             {resetCount}回
+                           </div>
                         </button>
                       );
                    })}
                  </div>
               </div>
-              <div className="p-4 bg-amber-50/50 border-t border-amber-900/10 text-center">
+              <div className="p-4 bg-amber-50/50 border-t border-amber-900/10 flex items-center justify-center gap-8">
                 <span className="text-sm font-bold text-amber-800">
-                  {solvedProblems.length} / {problems.length} 問 正解
+                  正解：{solvedProblems.length}問 / {problems.length}
+                </span>
+                <span className="text-sm font-bold text-amber-800">
+                  間違えた回数: {Object.values(resetCounts).reduce((a, b) => a + b, 0)}回
                 </span>
               </div>
             </motion.div>
